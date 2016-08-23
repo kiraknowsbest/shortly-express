@@ -6,5 +6,3 @@ var Links = new db.Collection();
 Links.model = Link;
 
 module.exports = Links;
-
-// add a new link
