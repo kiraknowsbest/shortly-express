@@ -81,19 +81,14 @@ function(req, res) {
 app.post('/login', 
 function(req, res) {
   console.log('/login post');
-  User.getPassword(req.body.username);
   // check for existence of user
-  // db.knex('select');
-    // redirect to signup
-  // else
-    // verify password
-      // redirect to create
-  res.redirect('/create');
-    // else
-      // redirect to login
-
-
-
+  User.getPassword(req.body.username, function(pwd) {
+    if (pwd === req.body.password) {
+      res.redirect('/create');
+    } else {
+      res.redirect('/login');
+    }
+  });
 });
 
 app.get('/login', 

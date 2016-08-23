@@ -26,11 +26,15 @@ var User = db.Model.extend({
 
 });
 
-User.getPassword = function(name) {
-  var recordedPass = db.knex('users').where({
+User.getPassword = function(name, callback) {
+  db.knex('users').where({
     username: name
   }).select('password').then(function(rows) {
+    if (!rows[0]) {
+      callback(null);
+    }
     console.log(rows[0], 'rows[0]');
+    callback(rows[0].password);
   });
 };
 
