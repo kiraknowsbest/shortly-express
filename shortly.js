@@ -82,8 +82,8 @@ app.post('/login',
 function(req, res) {
   console.log('/login post');
   // check for existence of user
-  User.getPassword(req.body.username, function(pwd) {
-    if (pwd === req.body.password) {
+  User.getPassword(req.body.username, req.body.password, function(bool) {
+    if (bool) {
       res.redirect('/create');
     } else {
       res.redirect('/login');

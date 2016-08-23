@@ -9,32 +9,40 @@ var User = db.Model.extend({
   hasTimestamps: true,
   initialize: function(user) {
     var username = user.username;
-    var password = user.password;
-    var row = {'username': username, 'password': password, 'code': 'salt'};
-
-    db.knex.insert(row).into('users').then(function(id) {
-      console.log(id);
-    }).finally(function() {
-      //no args
-    });
-
-    console.log( username, password, 'name name ' );
     this.set('username', username);
-    this.set('password', password);
-  },
+    bcrypt.genSalt(10, function(err, salt) {
+      bcrypt.hash(user.password, salt, null, function(err, hash) {
+        if (err) {
+          console.log('Error: ', err);
+        } else {
+          var row = {'username': username, 'password': hash};
+// begin session if new user is created
+          db.knex.insert(row).into('users').then(function(id) {
+            console.log(id + ' the id has arrived');
+          });
 
-
+        }
+      });
+    });
+  }
 });
 
-User.getPassword = function(name, callback) {
+User.getPassword = function(name, pwd, callback) {
   db.knex('users').where({
     username: name
   }).select('password').then(function(rows) {
     if (!rows[0]) {
       callback(null);
+    } else {
+      bcrypt.compare(pwd, rows[0].password, function(err, res) {
+        if (err) {
+          console.log('Error: bcrypt comparrison error - ', err);
+        }
+// make session if res is true
+  // the users id from table        
+        callback(res);
+      });
     }
-    console.log(rows[0], 'rows[0]');
-    callback(rows[0].password);
   });
 };
 
