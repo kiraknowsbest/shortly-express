@@ -2,6 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -11,6 +12,8 @@ var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 
 var app = express();
+// create cookieParser
+app.use(cookieParser());
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -21,28 +24,27 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
-
-app.get('/', 
+app.get('/',
 function(req, res) {
   // if not logged in
   // else
-  res.render('index');
+  res.render('index');  
 });
 
-app.get('/create', 
+app.get('/create', util.checkUser,
 function(req, res) {
   // res.redirect('/login');
   res.render('index');
 });
 
-app.get('/links', 
+app.get('/links', util.checkUser,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.status(200).send(links.models);
   });
 });
 
-app.post('/links', 
+app.post('/links', util.checkUser,
 function(req, res) {
   var uri = req.body.url;
 
@@ -78,12 +80,13 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
-app.post('/login', 
+app.post('/login',
 function(req, res) {
   console.log('/login post');
   // check for existence of user
   User.getPassword(req.body.username, req.body.password, function(bool) {
     if (bool) {
+      res.cookie('name', req.body.username, {'maxAge': 120000});
       res.redirect('/create');
     } else {
       res.redirect('/login');
@@ -91,30 +94,32 @@ function(req, res) {
   });
 });
 
-app.get('/login', 
+app.get('/login',
 function(req, res) {
   console.log('/login get');
   res.render('login');
 });
 
-app.get('/signup', 
+app.get('/signup',
 function(req, res) {
   console.log('/signup get');
   res.render('signup');
 });
 
-app.post('/signup', 
+app.post('/signup',
 function(req, res) {
   console.log('/signup post');
   if (!req.body) {
     res.sendStatus(400);
   }
   var user = new User(req.body);
+  res.cookie('name', req.body.username, {'maxAge': 120000});
   res.redirect('/create');
 });
 
-app.get('/logout', 
+app.get('/logout',
 function(req, res) {
+  res.clearCookie('name');
   res.render('logout');
 });
 
