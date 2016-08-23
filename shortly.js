@@ -3,7 +3,6 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 
-
 var db = require('./app/config');
 var Users = require('./app/collections/users');
 var User = require('./app/models/user');
@@ -25,11 +24,14 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/', 
 function(req, res) {
+  // if not logged in
+  // else
   res.render('index');
 });
 
 app.get('/create', 
 function(req, res) {
+  // res.redirect('/login');
   res.render('index');
 });
 
@@ -76,7 +78,38 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
+app.post('/login', 
+function(req, res) {
+  console.log('/login post');
+  res.redirect('/create');
+});
 
+app.get('/login', 
+function(req, res) {
+  console.log('/login get');
+  res.render('login');
+});
+
+app.get('/signup', 
+function(req, res) {
+  console.log('/signup get');
+  res.render('signup');
+});
+
+app.post('/signup', 
+function(req, res) {
+  console.log('/signup post');
+  if (!req.body) {
+    res.sendStatus(400);
+  }
+  var user = new User(req.body);
+  res.redirect('/create');
+});
+
+app.get('/logout', 
+function(req, res) {
+  res.render('logout');
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
