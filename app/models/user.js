@@ -24,8 +24,18 @@ var User = db.Model.extend({
         }
       });
     });
+  },
+  comparePassword: function(attemptedPassword, callback) {
+    bcrypt.compare(attemptedPassword, this.get('password'), function(err, isMatch) {
+      if (err) {
+        console.log(err);
+      }
+      callback(isMatch);
+    });
   }
 });
+
+
 
 User.getPassword = function(name, pwd, callback) {
   db.knex('users').where({

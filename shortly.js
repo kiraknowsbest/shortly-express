@@ -3,6 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -12,6 +13,7 @@ var Link = require('./app/models/link');
 var Click = require('./app/models/click');
 
 var app = express();
+app.use(session({secret: 'b240341979'}));
 // create cookieParser
 app.use(cookieParser());
 
@@ -26,25 +28,24 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/',
 function(req, res) {
-  // if not logged in
-  // else
   res.render('index');  
 });
 
-app.get('/create', util.checkUser,
+app.get('/create',
 function(req, res) {
   // res.redirect('/login');
+  console.log('called /create');
   res.render('index');
 });
 
-app.get('/links', util.checkUser,
+app.get('/links',
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.status(200).send(links.models);
   });
 });
 
-app.post('/links', util.checkUser,
+app.post('/links',
 function(req, res) {
   var uri = req.body.url;
 
@@ -80,22 +81,29 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
-app.post('/login',
-function(req, res) {
-  console.log('/login post');
-  // check for existence of user
-  User.getPassword(req.body.username, req.body.password, function(bool) {
-    if (bool) {
-      res.cookie('name', req.body.username, {'maxAge': 120000});
-      res.redirect('/create');
-    } else {
-      res.redirect('/login');
-    }
-  });
+app.post('/login', function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  new User({username: username})
+    .fetch()
+    .then(function(user) {
+      if (!user) {
+        res.redirect('/login');
+      } else {
+        user.comparePassword(password, function(match) {
+          if (match) {
+            util.createSession(req, res, user);
+          } else {
+            res.redirect('/login');
+          }
+        });
+      }
+    });
 });
 
 app.get('/login',
 function(req, res) {
+// res.clearCookie('name');  
   console.log('/login get');
   res.render('login');
 });
@@ -108,19 +116,45 @@ function(req, res) {
 
 app.post('/signup',
 function(req, res) {
-  console.log('/signup post');
-  if (!req.body) {
-    res.sendStatus(400);
-  }
-  var user = new User(req.body);
-  res.cookie('name', req.body.username, {'maxAge': 120000});
-  res.redirect('/create');
+  var username = req.body.username;
+  var password = req.body.password;
+  new User({username: username})
+    .fetch()
+    .then(function(user) {
+      if (!user) {
+        var newUser = new User({
+          username: username,
+          password: password
+        });
+        newUser.save()
+          .then(function(newUser) {
+            util.createSession(req, res, newUser);
+          });
+      } else {
+        console.log('account exists');
+        res.redirect('/signup');
+      }
+    });
 });
 
 app.get('/logout',
 function(req, res) {
-  res.clearCookie('name');
-  res.render('logout');
+  console.log('logout get');
+// res.clearCookie('name');
+  req.session.destroy(function(err) {
+    if (err) {
+      console.log(err);
+    } else {
+      res.redirect('/login');
+    }
+  });
+});
+
+app.post('/logout',
+function(req, res) {
+  console.log('logout post');
+// res.clearCookie('name');
+  res.redirect(302, '/login');
 });
 
 /************************************************************/
